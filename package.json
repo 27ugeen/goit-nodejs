@@ -20,6 +20,12 @@
   },
   "homepage": "https://github.com/27ugeen/goit-nodejs#readme",
   "dependencies": {
+    "cors": "^2.8.5",
+    "esm": "^3.2.25",
+    "express": "^4.17.1",
+    "joi": "^14.3.1",
+    "morgan": "^1.10.0",
+    "uuid": "^7.0.3",
     "yargs": "^15.3.1"
   },
   "devDependencies": {
