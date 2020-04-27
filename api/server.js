@@ -4,7 +4,7 @@ import path from 'path';
 import morgan from 'morgan';
 const PORT = 3000;
 
-export class CrudServer {
+export class ContactsServer {
   constructor() {
     this.server = null;
   }

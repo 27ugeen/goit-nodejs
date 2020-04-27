@@ -1,4 +1,4 @@
 require = require('esm')(module);
-const { CrudServer } = require('./server');
+const { ContactsServer } = require('./server');
 
-new CrudServer().start();
+new ContactsServer().start();

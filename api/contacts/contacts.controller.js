@@ -1,8 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import Joi from 'joi';
-import { v4 } from 'uuid';
-import { NotFound } from '../helpers/error.constructor';
 import createControllerProxy from '../helpers/controllerProxy';
 
 const contactsPath = path.join(__dirname, '../../db/contacts.json');
@@ -15,182 +13,106 @@ const makeId = data => {
   return newId;
 };
 
-let contactsDB = [];
-
 class ContactsController {
   createContact(req, res, err) {
-    try {
-      // const contactId = v4();
-      // const newContact = {
-      //   id: contactId,
-      //   ...req.body,
-      // };
-      // contactsDB.push(newContact);
+    fs.readFile(contactsPath, 'utf8', (err, data) => {
+      if (err) throw err;
 
-      // return res.status(201).json(newContact);
-      fs.readFile(contactsPath, 'utf8', (err, data) => {
+      const contacts = JSON.parse(data);
+      const newId = makeId(data);
+      const newContact = { id: newId, ...req.body };
+      contacts.push(newContact);
+      const newContacts = JSON.stringify(contacts);
+
+      fs.writeFile(contactsPath, newContacts, err => {
         if (err) throw err;
-
-        const contacts = JSON.parse(data);
-        const newId = makeId(data);
-        const newContact = { id: newId, ...req.body };
-        contacts.push(newContact);
-        const newContacts = JSON.stringify(contacts);
-
-        fs.writeFile(contactsPath, newContacts, err => {
-          if (err) throw err;
-        });
-
-        return res.status(201).json(newContact);
       });
-    } catch (err) {
-      next(err);
-    }
+
+      return res.status(201).json(newContact);
+    });
   }
 
   getAllContacts(req, res, next) {
     fs.readFile(contactsPath, 'utf8', (err, data) => {
       if (err) throw err;
-      return res.status(200).json(JSON.parse(data));
+
+      const contacts = JSON.parse(data);
+      return res.status(200).json(contacts);
     });
   }
 
   getContactById(req, res, next) {
-    // try {
-    //   const { contactId } = req.params;
-    //   const searchContact = this.getContactFromArray(contactId);
-
-    //   return res.status(200).send(searchContact);
-    // } catch (err) {
-    //   next(err);
-    // }
-
-    try {
-      const { contactId } = req.params;
-
-      fs.readFile(contactsPath, 'utf8', (err, data) => {
-        if (err) throw err;
-        const contacts = JSON.parse(data);
-        const queryContact = contacts.find(
-          ({ id }) => id === Number(contactId),
-        );
-        if (!queryContact) {
-          // throw new NotFound('Contact not Found');
-          return res.status(404).send({ message: 'Not found' });
-        }
-        return res.status(200).send(queryContact);
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  updateContact(req, res, next) {
-    try {
-      // const { contactId } = req.params;
-      // const searchContact = this.getContactFromArray(contactId);
-      // const searchContactIndex = this.getContactIndexFromArray(contactId);
-      // const updatedContact = {
-      //   ...searchContact,
-      //   ...req.body,
-      // };
-      // contactsDB[searchContactIndex] = updatedContact;
-
-      // return res.status(200).json(updatedContact);
-      const { contactId } = req.params;
-
-      fs.readFile(contactsPath, 'utf8', (err, data) => {
-        if (err) throw err;
-        const contacts = JSON.parse(data);
-        const queryContact = contacts.find(
-          ({ id }) => id === Number(contactId),
-        );
-        if (!queryContact) {
-          // throw new NotFound('Contact not Found');
-          return res.status(404).send({ message: 'Not found' });
-        }
-
-        const queryContactIdx = contacts.findIndex(
-          ({ id }) => id === Number(contactId),
-        );
-
-        const updatedContact = {
-          ...queryContact,
-          ...req.body,
-        };
-        contacts[queryContactIdx] = updatedContact;
-
-        const newContacts = JSON.stringify(contacts);
-
-        fs.writeFile(contactsPath, newContacts, err => {
-          if (err) throw err;
-        });
-
-        return res.status(200).send(updatedContact);
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  deleteContact(req, res, next) {
-    try {
-      const { contactId } = req.params;
-      // const searchContactIndex = this.getContactIndexFromArray(contactId);
-      // contactsDB.splice(searchContactIndex, 1);
-
-      // return res.status(204).send();
-      fs.readFile(contactsPath, 'utf8', (err, data) => {
-        if (err) throw err;
-        const contacts = JSON.parse(data);
-        const queryContact = contacts.find(
-          ({ id }) => id === Number(contactId),
-        );
-        if (!queryContact) {
-          // throw new NotFound('Contact not Found');
-          return res.status(404).send({ message: 'Not found' });
-        }
-        const newContacts = JSON.stringify(
-          contacts.filter(({ id }) => id !== Number(contactId)),
-        );
-
-        fs.writeFile(contactsPath, newContacts, err => {
-          if (err) throw err;
-        });
-        return res.status(200).send({ message: 'contact deleted' });
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  getContactFromArray(contactId) {
-    // const searchContact = contactsDB.find(contact => contact.id === contactId);
-    // if (!searchContact) {
-    //   throw new NotFound('Contact not Found');
-    // }
-
-    // return searchContact;
+    const { contactId } = req.params;
     fs.readFile(contactsPath, 'utf8', (err, data) => {
       if (err) throw err;
+
       const contacts = JSON.parse(data);
-      const queryContact = contacts.find(({ id }) => id === contactId);
+      const queryContact = this.getContactFromArray(contacts, contactId);
       if (!queryContact) {
-        throw new NotFound('Contact not Found');
+        return res.status(404).send('contact not found');
       }
-      return queryContact;
+
+      return res.status(200).send(queryContact);
     });
   }
 
-  getContactIndexFromArray(contactId) {
-    const searchContact = contactsDB.findIndex(
-      contact => contact.id === contactId,
-    );
-    if (searchContact === -1) {
-      throw new NotFound('Contact not Found');
-    }
+  updateContact(req, res, next) {
+    const { contactId } = req.params;
 
-    return searchContact;
+    fs.readFile(contactsPath, 'utf8', (err, data) => {
+      if (err) throw err;
+
+      const contacts = JSON.parse(data);
+      const queryContact = this.getContactFromArray(contacts, contactId);
+      if (!queryContact) {
+        return res.status(404).send('contact not found');
+      }
+      const queryContactIdx = this.getContactIndexFromArray(
+        contacts,
+        contactId,
+      );
+      const updatedContact = {
+        ...queryContact,
+        ...req.body,
+      };
+      contacts[queryContactIdx] = updatedContact;
+      const newContacts = JSON.stringify(contacts);
+
+      fs.writeFile(contactsPath, newContacts, err => {
+        if (err) throw err;
+      });
+      return res.status(200).send(updatedContact);
+    });
+  }
+
+  deleteContact(req, res, next) {
+    const { contactId } = req.params;
+
+    fs.readFile(contactsPath, 'utf8', (err, data) => {
+      if (err) throw err;
+
+      const contacts = JSON.parse(data);
+      const queryContact = this.getContactFromArray(contacts, contactId);
+      if (!queryContact) {
+        return res.status(404).send('contact not found');
+      }
+      const newContacts = JSON.stringify(
+        contacts.filter(({ id }) => id !== Number(contactId)),
+      );
+
+      fs.writeFile(contactsPath, newContacts, err => {
+        if (err) throw err;
+      });
+      return res.status(200).send('contact deleted');
+    });
+  }
+
+  getContactFromArray(contacts, contactId) {
+    return contacts.find(({ id }) => id === Number(contactId));
+  }
+
+  getContactIndexFromArray(contacts, contactId) {
+    return contacts.findIndex(contact => contact.id === Number(contactId));
   }
 
   validateCreateContact(req, res, next) {
