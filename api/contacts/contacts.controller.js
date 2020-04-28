@@ -7,9 +7,9 @@ const contactsPath = path.join(__dirname, '../../db/contacts.json');
 
 const makeId = data => {
   const contacts = JSON.parse(data);
-  const contactsId = contacts.map(({ id }) => id);
-  const maxId = Math.max(...contactsId);
-  const newId = maxId + 1;
+  const contactsId = contacts.map(({ id }) => id).sort((a, b) => a - b);
+  const lastId = contactsId[contactsId.length - 1];
+  const newId = lastId + 1;
   return newId;
 };
 
