@@ -24,8 +24,9 @@ const writeNewContacts = (contactsPath, newContacts, err) => {
 const listContacts = () => {
   fs.readFile(contactsPath, 'utf8', (err, data) => {
     if (err) throw err;
-    console.table(JSON.parse(data));
+    // console.table(JSON.parse(data));
     return JSON.parse(data);
+    // return data;
   });
 };
 

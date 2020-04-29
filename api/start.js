@@ -1,4 +1,4 @@
 require = require('esm')(module);
-const { ContactsServer } = require('./api/server');
+const { ContactsServer } = require('./server');
 
 new ContactsServer().start();
