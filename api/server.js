@@ -2,18 +2,19 @@ import express from 'express';
 import { contactsRouter } from './contacts/contacts.router';
 import path from 'path';
 import morgan from 'morgan';
+import mongoose from 'mongoose';
 const PORT = 3000;
 
 export class ContactsServer {
   constructor() {
     this.server = null;
   }
-  start() {
+  async start() {
     this.initServer();
     this.initMiddleware();
     this.initRoutes();
     this.handleErrors();
-    // this.initDatabase();
+    await this.initDatabase();
     this.startListening();
   }
 
@@ -40,7 +41,15 @@ export class ContactsServer {
     });
   }
 
-  initDatabase() {}
+  async initDatabase() {
+    try {
+      await mongoose.connect(process.env.MONGO_DB_URL);
+      console.log('Database connection successful! )))');
+    } catch (err) {
+      console.log('Connection error', err);
+      process.exit(1);
+    }
+  }
 
   startListening() {
     this.server.listen(PORT, () => {

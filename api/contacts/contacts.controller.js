@@ -6,6 +6,16 @@ import createControllerProxy from '../helpers/controllerProxy';
 class ContactsController {
   async createContact(req, res, next) {
     try {
+      const contacts = await contactsModel.findAllContacts();
+
+      if (contacts.find(({ email }) => email === req.body.email)) {
+        return res.status(400).json('this email is not unique');
+      }
+
+      if (!req.body.email.includes(`@`)) {
+        return res.status(400).json(`an email must include '@'`);
+      }
+
       const newContact = await contactsModel.createContact(req.body);
 
       return res.status(201).json(newContact);
@@ -17,6 +27,7 @@ class ContactsController {
   async getAllContacts(req, res, next) {
     try {
       const contacts = await contactsModel.findAllContacts();
+      // console.log(contacts);
       return res.status(200).json(contacts);
     } catch (err) {
       next(err);
@@ -77,7 +88,7 @@ class ContactsController {
     });
     const validationResult = Joi.validate(req.body, contactsRules);
     if (validationResult.error) {
-      return res.status(400).json(validationResult.error);
+      return res.status(400).json(validationResult.error.message);
     }
 
     next();
@@ -91,7 +102,7 @@ class ContactsController {
     });
     const validationResult = Joi.validate(req.body, contactsRules);
     if (validationResult.error) {
-      return res.status(400).json(validationResult.error);
+      return res.status(400).json(validationResult.error.message);
     }
 
     next();
