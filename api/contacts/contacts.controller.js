@@ -54,7 +54,7 @@ class ContactsController {
         contactId,
         req.body,
       );
-      return res.status(200).json(updatedContact.value);
+      return res.status(200).json(updatedContact);
     } catch (err) {
       next(err);
     }

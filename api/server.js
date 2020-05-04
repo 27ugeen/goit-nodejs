@@ -12,9 +12,9 @@ export class ContactsServer {
   async start() {
     this.initServer();
     this.initMiddleware();
+    await this.initDatabase();
     this.initRoutes();
     this.handleErrors();
-    await this.initDatabase();
     this.startListening();
   }
 
