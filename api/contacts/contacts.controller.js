@@ -1,118 +1,83 @@
-import fs from 'fs';
-import path from 'path';
 import Joi from 'joi';
+import { contactsModel } from './contacts.model';
+import { NotFound } from '../helpers/error.constructor';
 import createControllerProxy from '../helpers/controllerProxy';
 
-const contactsPath = path.join(__dirname, '../../db/contacts.json');
-
-const makeId = data => {
-  const contacts = JSON.parse(data);
-  const contactsId = contacts.map(({ id }) => id).sort((a, b) => a - b);
-  const lastId = contactsId[contactsId.length - 1];
-  const newId = lastId + 1;
-  return newId;
-};
-
 class ContactsController {
-  createContact(req, res, err) {
-    fs.readFile(contactsPath, 'utf8', (err, data) => {
-      if (err) throw err;
+  async createContact(req, res, next) {
+    try {
+      const contacts = await contactsModel.findAllContacts();
 
-      const contacts = JSON.parse(data);
-      const newId = makeId(data);
-      const newContact = { id: newId, ...req.body };
-      contacts.push(newContact);
-      const newContacts = JSON.stringify(contacts);
+      if (contacts.find(({ email }) => email === req.body.email)) {
+        return res.status(400).json('this email is not unique');
+      }
 
-      fs.writeFile(contactsPath, newContacts, err => {
-        if (err) throw err;
-      });
+      if (!req.body.email.includes(`@`)) {
+        return res.status(400).json(`an email must include '@'`);
+      }
+
+      const newContact = await contactsModel.createContact(req.body);
 
       return res.status(201).json(newContact);
-    });
+    } catch (err) {
+      next(err);
+    }
   }
 
-  getAllContacts(req, res, next) {
-    fs.readFile(contactsPath, 'utf8', (err, data) => {
-      if (err) throw err;
-
-      const contacts = JSON.parse(data);
+  async getAllContacts(req, res, next) {
+    try {
+      const contacts = await contactsModel.findAllContacts();
+      // console.log(contacts);
       return res.status(200).json(contacts);
-    });
+    } catch (err) {
+      next(err);
+    }
   }
 
-  getContactById(req, res, next) {
-    const { contactId } = req.params;
-    fs.readFile(contactsPath, 'utf8', (err, data) => {
-      if (err) throw err;
+  async getContactById(req, res, next) {
+    try {
+      const { contactId } = req.params;
 
-      const contacts = JSON.parse(data);
-      const queryContact = this.getContactFromArray(contacts, contactId);
-      if (!queryContact) {
-        return res.status(404).send('contact not found');
-      }
-
-      return res.status(200).send(queryContact);
-    });
+      const queryContact = await this.getContactFromArray(contactId);
+      return res.status(200).json(queryContact);
+    } catch (err) {
+      next(err);
+    }
   }
 
-  updateContact(req, res, next) {
-    const { contactId } = req.params;
+  async updateContact(req, res, next) {
+    try {
+      const { contactId } = req.params;
 
-    fs.readFile(contactsPath, 'utf8', (err, data) => {
-      if (err) throw err;
-
-      const contacts = JSON.parse(data);
-      const queryContact = this.getContactFromArray(contacts, contactId);
-      if (!queryContact) {
-        return res.status(404).send('contact not found');
-      }
-      const queryContactIdx = this.getContactIndexFromArray(
-        contacts,
+      await this.getContactFromArray(contactId);
+      const updatedContact = await contactsModel.updateContactById(
         contactId,
+        req.body,
       );
-      const updatedContact = {
-        ...queryContact,
-        ...req.body,
-      };
-      contacts[queryContactIdx] = updatedContact;
-      const newContacts = JSON.stringify(contacts);
-
-      fs.writeFile(contactsPath, newContacts, err => {
-        if (err) throw err;
-      });
-      return res.status(200).send(updatedContact);
-    });
+      return res.status(200).json(updatedContact);
+    } catch (err) {
+      next(err);
+    }
   }
 
-  deleteContact(req, res, next) {
-    const { contactId } = req.params;
+  async deleteContact(req, res, next) {
+    try {
+      const { contactId } = req.params;
 
-    fs.readFile(contactsPath, 'utf8', (err, data) => {
-      if (err) throw err;
-
-      const contacts = JSON.parse(data);
-      const queryContact = this.getContactFromArray(contacts, contactId);
-      if (!queryContact) {
-        return res.status(404).send('contact not found');
-      }
-      const newContacts = JSON.stringify(
-        contacts.filter(({ id }) => id !== Number(contactId)),
-      );
-
-      fs.writeFile(contactsPath, newContacts, err => {
-        if (err) throw err;
-      });
+      await this.getContactFromArray(contactId);
+      await contactsModel.deleteContactById(contactId);
       return res.status(200).send('contact deleted');
-    });
+    } catch (err) {
+      next(err);
+    }
   }
 
-  getContactFromArray(contacts, contactId) {
-    return contacts.find(({ id }) => id === Number(contactId));
-  }
-
-  getContactIndexFromArray(contacts, contactId) {
-    return contacts.findIndex(contact => contact.id === Number(contactId));
+  async getContactFromArray(contactId) {
+    const contactFound = await contactsModel.findContactById(contactId);
+    if (!contactFound) {
+      throw new NotFound('Contact not found');
+    }
+    return contactFound;
   }
 
   validateCreateContact(req, res, next) {
@@ -123,7 +88,7 @@ class ContactsController {
     });
     const validationResult = Joi.validate(req.body, contactsRules);
     if (validationResult.error) {
-      return res.status(400).json(validationResult.error);
+      return res.status(400).json(validationResult.error.message);
     }
 
     next();
@@ -137,7 +102,7 @@ class ContactsController {
     });
     const validationResult = Joi.validate(req.body, contactsRules);
     if (validationResult.error) {
-      return res.status(400).json(validationResult.error);
+      return res.status(400).json(validationResult.error.message);
     }
 
     next();
