@@ -1,11 +1,12 @@
 import express from 'express';
-import { contactsRouter } from './contacts/contacts.router';
+// import { contactsRouter } from './contacts/contacts.router';
+import { authRouter } from './auth/auth.router';
 import path from 'path';
-import morgan from 'morgan';
 import mongoose from 'mongoose';
+import morgan from 'morgan';
 const PORT = 3000;
 
-export class ContactsServer {
+export class UsersServer {
   constructor() {
     this.server = null;
   }
@@ -29,7 +30,8 @@ export class ContactsServer {
   }
 
   initRoutes() {
-    this.server.use('/api', contactsRouter);
+    // this.server.use('/api', contactsRouter);
+    this.server.use('/auth', authRouter);
   }
 
   handleErrors() {

@@ -1,4 +1,6 @@
 require = require('esm')(module);
-const { ContactsServer } = require('./server');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+const { UsersServer } = require('./server');
 
-new ContactsServer().start();
+new UsersServer().start();

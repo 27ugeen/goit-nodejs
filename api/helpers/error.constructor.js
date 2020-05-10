@@ -8,6 +8,18 @@ export class BaseError extends Error {
 
 export class NotFound extends BaseError {
   constructor(message) {
-    super('NotFoundError', message, 404);
+    super("NotFoundError", message, 404);
+  }
+}
+
+export class ConflictError extends BaseError {
+  constructor(message) {
+    super("ConflictError", message, 409);
+  }
+}
+
+export class UnauthorizedError extends BaseError {
+  constructor(message) {
+    super("UnauthorizedError", message, 401);
   }
 }
