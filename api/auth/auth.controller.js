@@ -12,16 +12,9 @@ class AuthController {
 
   async registerUser(req, res, next) {
     try {
-      // 1. validate request body +
-      // 2. check if email exists in collection +
-      // 3. hash password +
-      // 4. save user to DB +
-      // 5. send response +
       const { username, email, password } = req.body;
-
-      // console.log(userModel.findUserSubscription());
-
       const existingUser = await userModel.findUserByEmail(email);
+
       if (existingUser) {
         throw new ConflictError('Email in use');
       }
@@ -44,25 +37,34 @@ class AuthController {
   async getAllUsers(req, res, next) {
     try {
       const users = await userModel.findAllUsers();
-      console.log(users);
       return res.status(200).json(users);
     } catch (err) {
       next(err);
     }
   }
 
-  async signIn(req, res, next) {
+  async getCurrentUser(req, res, next) {
     try {
-      // 1. validate request body +
-      // 2. fetch user by email from DB +
-      // 3. check passwords hash +
-      // 4. create session token +
-      // 5. send successful response +
+      const { username, email, subscription } = req.user;
+      const currentUser = {
+        username,
+        email,
+        subscription,
+      };
+
+      return res.status(200).json(currentUser);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async loginUser(req, res, next) {
+    try {
       const { email, password } = req.body;
 
       const user = await userModel.findUserByEmail(email);
       if (!user) {
-        throw new UnauthorizedError('User does not exist');
+        throw new UnauthorizedError('Email or password does not exist');
       }
 
       const isPasswordCorrect = await this.comparePasswordHash(
@@ -85,23 +87,18 @@ class AuthController {
     }
   }
 
-  async signOut(req, res, next) {
+  async logoutUser(req, res, next) {
     try {
       await userModel.updateUserById(req.user._id, { token: null });
 
-      return res.status(204).json();
+      return res.status(200).json({ message: 'Logout success' });
     } catch (err) {
       next(err);
     }
   }
 
-  async authorize(req, res, next) {
+  async authorizeUser(req, res, next) {
     try {
-      // 1. get token from header
-      // 2. verify jwt token
-      // 3. find user by token
-      // 4. invoke next middleware
-
       const authHeader = req.headers.authorization || '';
       const token = authHeader.replace('Bearer ', '');
 
@@ -134,13 +131,13 @@ class AuthController {
 
     const validationResult = Joi.validate(req.body, userRules);
     if (validationResult.error) {
-      return res.status(400).json(validationResult.error);
+      return res.status(400).json(validationResult.error.message);
     }
 
     next();
   }
 
-  async validateSignIn(req, res, next) {
+  async validateLoginUser(req, res, next) {
     const userRules = Joi.object({
       email: Joi.string().required(),
       password: Joi.string().required(),
@@ -166,11 +163,12 @@ class AuthController {
     return jwt.sign({ uid }, process.env.JWT_SECRET);
   }
 
-  composeUserForResponse(user) {
+  composeUserForResponse({ _id, username, email, subscription }) {
     return {
-      id: user._id,
-      username: user.username,
-      email: user.email,
+      _id,
+      username,
+      email,
+      subscription,
     };
   }
 }

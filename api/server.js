@@ -32,6 +32,7 @@ export class UsersServer {
   initRoutes() {
     // this.server.use('/api', contactsRouter);
     this.server.use('/auth', authRouter);
+    this.server.use('/users', authRouter);
   }
 
   handleErrors() {
@@ -45,7 +46,9 @@ export class UsersServer {
 
   async initDatabase() {
     try {
-      await mongoose.connect(process.env.MONGO_DB_URL);
+      await mongoose.connect(process.env.MONGO_DB_URL, {
+        useNewUrlParser: true,
+      });
       console.log('Database connection successful! )))');
     } catch (err) {
       console.log('Connection error', err);

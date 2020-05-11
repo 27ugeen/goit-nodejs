@@ -9,10 +9,24 @@ router.post(
   authController.registerUser,
 );
 
-router.get('/register', authController.getAllUsers);
+router.get('/', authController.getAllUsers);
 
-router.post('/sign-in', authController.validateSignIn, authController.signIn);
+router.get(
+  '/current',
+  authController.authorizeUser,
+  authController.getCurrentUser,
+);
 
-router.patch('/sign-out', authController.authorize, authController.signOut);
+router.post(
+  '/login',
+  authController.validateLoginUser,
+  authController.loginUser,
+);
+
+router.patch(
+  '/logout',
+  authController.authorizeUser,
+  authController.logoutUser,
+);
 
 export const authRouter = router;
