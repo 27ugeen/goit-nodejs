@@ -5,6 +5,7 @@ import bcryptjs from 'bcryptjs';
 import Joi from 'joi';
 import jwt from 'jsonwebtoken';
 
+
 class AuthController {
   constructor() {
     this._saltRounds = 5;
@@ -19,10 +20,13 @@ class AuthController {
         throw new ConflictError('Email in use');
       }
 
+      const avatarURL = `${process.env.AVATAR_URL}${req.file}`;
+      console.log('avatarURL', avatarURL);
       const passwordHash = await this.hashPassword(password);
       const newUser = await userModel.createUser({
         username,
         email,
+        avatarURL,
         passwordHash,
       });
 
@@ -82,6 +86,18 @@ class AuthController {
         user: this.composeUserForResponse(user),
         token,
       });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async updateUserAvatar(req, res, next) {
+    try {
+      const avatarURL = `${process.env.SERVER_URL}/${process.env.COMPRESSED_IMAGES_BASE_URL}/${req.file.filename}`;
+
+      await userModel.updateUserById(req.user._id, { avatarURL });
+
+      return res.status(200).json({ avatarURL });
     } catch (err) {
       next(err);
     }
@@ -163,12 +179,13 @@ class AuthController {
     return jwt.sign({ uid }, process.env.JWT_SECRET);
   }
 
-  composeUserForResponse({ _id, username, email, subscription }) {
+  composeUserForResponse({ _id, username, email, subscription, avatarURL }) {
     return {
       _id,
       username,
       email,
       subscription,
+      avatarURL,
     };
   }
 }

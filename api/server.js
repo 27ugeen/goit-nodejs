@@ -1,10 +1,12 @@
 import express from 'express';
 // import { contactsRouter } from './contacts/contacts.router';
 import { authRouter } from './auth/auth.router';
+// import { userRouter } from './user/user.router';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import mongoose from 'mongoose';
 import morgan from 'morgan';
-const PORT = 3000;
+const PORT = process.env.PORT;
 
 export class UsersServer {
   constructor() {
@@ -26,21 +28,23 @@ export class UsersServer {
   initMiddleware() {
     this.server.use(express.json());
     this.server.use('/static', express.static(path.join(__dirname, 'static')));
-    this.server.use(morgan('tiny'));
+    this.server.use(express.static(process.env.STATIC_FILES_PATH));
+    this.server.use(morgan('combined', { useUnifiedTopology: true }));
+    // this.server.use(cookieParser);
   }
 
   initRoutes() {
     // this.server.use('/api', contactsRouter);
-    this.server.use('/auth', authRouter);
+    // this.server.use('/auth', authRouter);
     this.server.use('/users', authRouter);
+    // this.server.use('/users', userRouter);
   }
 
   handleErrors() {
     this.server.use((err, req, res, next) => {
       delete err.stack;
-
-      // next(err);
-      return res.status(err.status).send(`${err.status}: ${err.message}`);
+      const statusCode = err.status || 500;
+      return res.status(statusCode).send(err.message);
     });
   }
 
@@ -58,7 +62,7 @@ export class UsersServer {
 
   startListening() {
     this.server.listen(PORT, () => {
-      console.log(`Server started listening on port: ${PORT}`);
+      console.log('Server started listening on port:', PORT);
     });
   }
 }
