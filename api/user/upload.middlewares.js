@@ -3,7 +3,7 @@ import path from 'path';
 import imagemin from 'imagemin';
 import imageminJpegtran from 'imagemin-jpegtran';
 import imageminPngquant from 'imagemin-pngquant';
-import fs, { promises as fsPromises } from 'fs';
+import { promises as fsPromises } from 'fs';
 import { avatar } from './buildAvatar';
 
 const storage = multer.diskStorage({
@@ -56,9 +56,7 @@ export async function buildAvatar(req, res, next) {
   const avatarName = `${Date.now()}.png`;
   const avatarPath = path.join(__dirname, `./../../temp/${avatarName}`);
 
-  fs.writeFile(avatarPath, buffer, err => {
-    if (err) throw err;
-  });
+  await fsPromises.writeFile(avatarPath, buffer);
 
   const destinationUncompressed = process.env.UNCOMPRESSED_IMAGES_FOLDER;
   if (!destinationUncompressed) {
