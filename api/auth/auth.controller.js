@@ -1,14 +1,19 @@
 import createControllerProxy from '../helpers/controllerProxy';
-import { userModel } from '../user/user.model';
-import { ConflictError, UnauthorizedError } from '../helpers/error.constructor';
+import { userModel, USER_STATUSES } from '../user/user.model';
+import {
+  ConflictError,
+  UnauthorizedError,
+  NotFound,
+} from '../helpers/error.constructor';
 import bcryptjs from 'bcryptjs';
 import Joi from 'joi';
 import jwt from 'jsonwebtoken';
-
+import sgMail from '@sendgrid/mail';
 
 class AuthController {
   constructor() {
     this._saltRounds = 5;
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
   }
 
   async registerUser(req, res, next) {
@@ -30,9 +35,41 @@ class AuthController {
         passwordHash,
       });
 
+      this.sendVerificationEmail(newUser);
+
       return res.status(201).json({
         user: this.composeUserForResponse(newUser),
       });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async sendVerificationEmail(user) {
+    const verificationLink = `${process.env.SERVER_URL}/users/verify/${user.verificationToken}`;
+
+    await sgMail.send({
+      to: user.email,
+      from: process.env.SENDER_EMAIL,
+      subject: 'Please verify your email',
+      html: `<a href="${verificationLink}">Click to verify your email</a>`,
+    });
+  }
+
+  async verifyUser(req, res, next) {
+    try {
+      const { verificationToken } = req.params;
+
+      const userToVerify = await userModel.findByVerificationToken(
+        verificationToken,
+      );
+      if (!userToVerify) {
+        throw new NotFound('User not found');
+      }
+
+      await userModel.verifyUser(verificationToken);
+
+      return res.status(200).send('User successfully verified');
     } catch (err) {
       next(err);
     }
@@ -69,6 +106,10 @@ class AuthController {
       const user = await userModel.findUserByEmail(email);
       if (!user) {
         throw new UnauthorizedError('Email or password does not exist');
+      }
+
+      if (user.status !== USER_STATUSES.ACTIVE) {
+        throw new UnauthorizedError('User not verified');
       }
 
       const isPasswordCorrect = await this.comparePasswordHash(
