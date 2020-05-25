@@ -1,5 +1,11 @@
 import mongoose, { Schema } from 'mongoose';
 const { ObjectId } = mongoose.Types;
+const uuid = require('uuid');
+
+export const USER_STATUSES = {
+  NOT_VERIFIED: 'NOT_VERIFIED',
+  ACTIVE: 'ACTIVE',
+};
 
 const userSchema = new Schema({
   username: { type: String, required: true },
@@ -16,6 +22,13 @@ const userSchema = new Schema({
     enum: ['free', 'pro', 'premium'],
     default: 'free',
   },
+  verificationToken: { type: String, required: false },
+  status: {
+    type: String,
+    required: true,
+    default: USER_STATUSES.NOT_VERIFIED,
+    enum: Object.values(USER_STATUSES),
+  },
   token: { type: String, required: false },
 });
 
@@ -26,8 +39,12 @@ userSchema.statics.findUserByEmail = findUserByEmail;
 userSchema.statics.updateUserById = updateUserById;
 userSchema.statics.deleteUserById = deleteUserById;
 userSchema.statics.findUserByToken = findUserByToken;
+userSchema.statics.findByVerificationToken = findByVerificationToken;
+userSchema.statics.verifyUser = verifyUser;
 
 async function createUser(userParams) {
+  userParams.verificationToken = uuid.v4();
+
   return this.create(userParams);
 }
 
@@ -65,6 +82,17 @@ async function deleteUserById(id) {
   }
 
   return this.findByIdAndDelete(id);
+}
+
+async function findByVerificationToken(verificationToken) {
+  return this.findOne({ verificationToken });
+}
+
+async function verifyUser(verificationToken) {
+  return this.updateOne(
+    { verificationToken },
+    { $set: { verificationToken: null, status: USER_STATUSES.ACTIVE } },
+  );
 }
 
 export const userModel = mongoose.model('User', userSchema);

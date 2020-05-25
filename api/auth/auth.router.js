@@ -40,4 +40,6 @@ router.patch(
   authController.updateUserAvatar,
 );
 
+router.get('/verify/:verificationToken', authController.verifyUser);
+
 export const authRouter = router;

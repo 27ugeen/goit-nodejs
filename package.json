@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/27ugeen/goit-nodejs#readme",
   "dependencies": {
+    "@sendgrid/mail": "^7.1.1",
     "avatar-builder": "^1.0.1",
     "avatar-generator": "^2.0.4",
     "bcryptjs": "^2.4.3",
